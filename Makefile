@@ -35,8 +35,8 @@ clean:
 
 # Automatic coding style, in my personal style
 beauty:
-	clang-format -i -style=file */*.cpp
-	clang-format -i -style=file */*.hpp
+	clang-format -i -style=file src/*.cpp
+	clang-format -i -style=file src/*.hpp
 
 # Checks the memory for leaks
 MFLAGS = --leak-check=full --show-leak-kinds=all --track-origins=yes

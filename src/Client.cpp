@@ -37,6 +37,7 @@ int main(int argc, char **argv) {
 
     using namespace RestCpp;
     Client client(host, port);
+    client.run();
 
     return 0;
 }

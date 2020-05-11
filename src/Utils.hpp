@@ -26,19 +26,23 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
+#include "../lib/json.hpp"
+
+using json = nlohmann::json;
 
 #define lint uint64_t  // Long Int
 #define uint uint32_t  // Unsigned Int
 #define sint uint16_t  // Short Int
 #define bint uint8_t   // Byte Int
 #define uchar unsigned char
-
 
 #define ENDL "\r\n"
 #define HEADER_TERMINATOR "\r\n\r\n"
@@ -47,7 +51,8 @@
 
 // Settings
 #define ENABLE_LOGS false
-#define BUFLEN 8192         // Response buffer size
+#define BUFLEN 8192     // Response buffer size
+#define HIDE_PASS true  // Hide password input
 
 /**
  * @brief Check if the condition is met. If it doesn't, print message and exit
@@ -99,6 +104,12 @@ void nsleep(long nanoseconds) {
     nanosleep(&slptm, NULL);
 }
 
+/**
+ * @brief DNS Lookup to find the associated to the hostname
+ * @param hostname The hostname
+ * @param port The port
+ * @return in_addr The address of the host
+ */
 in_addr getIpFromHostname(std::string hostname, int port) {
     addrinfo *res;
     std::string service = std::to_string(port);
@@ -109,4 +120,18 @@ in_addr getIpFromHostname(std::string hostname, int port) {
     sockaddr_in addr = *(sockaddr_in *)res->ai_addr;
     freeaddrinfo(res);
     return addr.sin_addr;
+}
+
+/**
+ * @brief Check if the string is a positive integer
+ * @param s A string
+ * @return true The string represents a positive integer
+ * @return false The string doesn't represent a positive integer
+ */
+bool is_uint(const std::string &s) {
+    std::size_t found = s.find_first_not_of("0123456789");
+    if (found != std::string::npos) {
+        return false;
+    }
+    return true;
 }
