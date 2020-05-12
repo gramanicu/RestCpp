@@ -61,6 +61,8 @@ class Cookie {
  * @param url The url
  * @param query_params The query parameters (can be "" if not needed)
  * @param cookies A list of cookies (the can be "not specified")
+ * @param jwt_token The jwt used in the connection (this isn't generically
+ * implemented)
  * @return std::string The request
  */
 std::string create_get_request(
@@ -97,23 +99,67 @@ std::string create_get_request(
 }
 
 /**
+ * @brief Create a HTTP/1.1 DELETE request
+ * @param host The hostname
+ * @param url The url
+ * @param cookies A list of cookies (the can be "not specified")
+ * @param jwt_token The jwt used in the connection (this isn't generically
+ * implemented)
+ * @return std::string The request
+ */
+std::string create_delete_request(
+    const std::string& host, const std::string& url,
+    std::vector<Cookie> cookies = std::vector<Cookie>(),
+    const std::string& jwt_token = "") {
+    // Start building the request
+    std::stringstream ss;
+
+    ss << "DELETE " << url << " HTTP/1.1" << ENDL;
+
+    ss << "Host: " << host << ENDL;
+    if (jwt_token != "") {
+        ss << "Authorization: Bearer " << jwt_token << ENDL;
+    }
+
+    if (cookies.size() != 0) {
+        ss << "Cookie: ";
+        uint i = 1;
+        for (auto& cookie : cookies) {
+            ss << cookie;
+            if (i++ != cookies.size()) {
+                ss << "; ";
+            }
+        }
+        ss << ENDL;
+    }
+    ss << ENDL;
+    return ss.str();
+}
+
+/**
  * @brief Create a HTTP/1.1 POST request
  * @param host The hostname
  * @param url The url
  * @param content_type The type of the data
  * @param body_data The data (json or x-www-form-urlenconded)
  * @param cookies A list of cookies (the can be "not specified")
+ * @param jwt_token The jwt used in the connection (this isn't generically
+ * implemented)
  * @return std::string The request
  */
 std::string create_post_request(
     const std::string& host, const std::string& url,
     const std::string& content_type, std::vector<KeyValue> body_data,
-    std::vector<Cookie> cookies = std::vector<Cookie>()) {
+    std::vector<Cookie> cookies = std::vector<Cookie>(),
+    const std::string& jwt_token = "") {
     // Start building the request
     std::stringstream ss;
 
     ss << "POST " << url << " HTTP/1.1" << ENDL;
     ss << "Host: " << host << ENDL;
+    if (jwt_token != "") {
+        ss << "Authorization: Bearer " << jwt_token << ENDL;
+    }
     ss << "Content-Type: " << content_type << ENDL;
 
     std::stringstream body;

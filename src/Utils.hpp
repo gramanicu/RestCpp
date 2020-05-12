@@ -135,3 +135,18 @@ bool is_uint(const std::string &s) {
     }
     return true;
 }
+
+/**
+ * @brief A simple way to disting good http response codes (2xx) from
+ * bad ones (4xx, 5xx)
+ * @param code The response/status code
+ * @return true Is a success code
+ * @return false It isn't a sucess code
+ */
+bool is_code_success(const uint code) {
+    if (code / 100 == 2) {
+        return true;
+    } else {
+        return false;
+    }
+}

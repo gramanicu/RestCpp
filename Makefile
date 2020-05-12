@@ -30,7 +30,7 @@ run: clean build
 
 # Deletes the binary and object files
 clean:
-	rm -f server subscriber $(OBJ) RestCpp.zip
+	rm -f restcpp $(OBJ) RestCpp.zip
 	echo "Deleted the binary and object files"
 
 # Automatic coding style, in my personal style

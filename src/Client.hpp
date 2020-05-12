@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Request.hpp"
+#include "Response.hpp"
 #include "Utils.hpp"
 
 namespace RestCpp {
@@ -102,7 +103,6 @@ class Client {
                 // Extract content lenght (the number) from the field
                 content_length =
                     atoi(ss.str().substr(clen_start, clen_size).c_str());
-                std::cout << content_length << "\n";
                 break;
             }
         }
@@ -191,7 +191,15 @@ class Client {
         std::string response = receive_from_server();
         disconnect_from_server();
 
-        // TODO - Process response
+        Response r(response);
+
+        if (is_code_success(r.get_response_code())) {
+            std::cout << "Registration succeded!\n";
+        } else {
+            // TODO - show the recv data
+            std::cout << "Registration failed (" << r.get_response_code()
+                      << ")\n";
+        }
     }
 
     /**
@@ -211,10 +219,17 @@ class Client {
 
         send_to_server(request);
         std::string response = receive_from_server();
-        std::cout << response << "\n";
         disconnect_from_server();
 
-        // TODO - Process response (get session id cookie)
+        Response r(response);
+        session_id = r.get_session_id();
+
+        if (is_code_success(r.get_response_code())) {
+            std::cout << "Login succeded!\n";
+        } else {
+            // TODO - show the recv data
+            std::cout << "Login failed (" << r.get_response_code() << ")\n";
+        }
     }
 
     void enter_library() {
@@ -234,10 +249,17 @@ class Client {
 
         send_to_server(request);
         std::string response = receive_from_server();
-        std::cout << response << "\n";
         disconnect_from_server();
 
-        // TODO - Process response (the JWT token)
+        Response r(response);
+        library_token = r.get_json_data()["token"];
+        if (is_code_success(r.get_response_code())) {
+            std::cout << "Authorized!\n";
+        } else {
+            // TODO - show the recv data
+            std::cout << "Couldn't enter the library (" << r.get_response_code()
+                      << ")\n";
+        }
     }
 
     void get_books() {
@@ -262,10 +284,17 @@ class Client {
 
         send_to_server(request);
         std::string response = receive_from_server();
-        std::cout << response << "\n";
         disconnect_from_server();
 
-        // TODO - Process the response
+        Response r(response);
+        if (is_code_success(r.get_response_code())) {
+            std::cout << "Received the books!\n";
+            std::cout << r.get_json_data().dump() << "\n";
+        } else {
+            // TODO - show the recv data
+            std::cout << "The books weren't received (" << r.get_response_code()
+                      << ")\n";
+        }
     }
 
     void get_book(const uint id) {
@@ -292,10 +321,18 @@ class Client {
 
         send_to_server(request);
         std::string response = receive_from_server();
-        std::cout << response << "\n";
         disconnect_from_server();
 
-        // TODO - Process the response
+        Response r(response);
+        if (is_code_success(r.get_response_code())) {
+            std::cout << "Received the book!\n";
+            std::cout << r.get_json_data().dump() << "\n";
+        } else {
+            // TODO - show the recv data
+            std::cout << "The book wasn't received (" << r.get_response_code()
+                      << ")\n";
+            std::cout << r.get_json_data().dump() << "\n";
+        }
     }
 
     void add_book(const std::string& title, const std::string& author,
@@ -308,6 +345,11 @@ class Client {
             return;
         }
 
+        if (library_token == "") {
+            std::cerr << "Enter the library first\n";
+            return;
+        }
+
         connect_to_server();
         std::vector<Cookie> cookies;
         cookies.push_back(session_id);
@@ -316,23 +358,63 @@ class Client {
         std::vector<KeyValue> body_data;
         body_data.push_back(KeyValue("title", title));
         body_data.push_back(KeyValue("author", author));
+        body_data.push_back(KeyValue("genre", genre));
         body_data.push_back(KeyValue("page_count", std::to_string(page_count)));
         body_data.push_back(KeyValue("publisher", publisher));
 
         std::string request =
             create_post_request(host, "/api/v1/tema/library/books",
-                                "application/json", body_data, cookies);
+                                "application/json", body_data, cookies, library_token);
 
         send_to_server(request);
         std::string response = receive_from_server();
-        std::cout << response << "\n";
         disconnect_from_server();
 
-        // TODO - Process response
+        Response r(response);
+        if (is_code_success(r.get_response_code())) {
+            std::cout << "Added book to the library!\n";
+        } else {
+            // TODO - show the recv data
+            std::cout << "Couldn't add the book (" << r.get_response_code()
+                      << ")\n";
+            std::cout << r.get_json_data().dump() << "\n";
+        }
     }
 
     void delete_book(const uint id) {
-        // TODO - Implemente delete
+        // Check if this application has received a session id (user has logged
+        // in succesfully)
+        if (session_id.is_null()) {
+            std::cerr << "Login into the account first!\n";
+            return;
+        }
+
+        if (library_token == "") {
+            std::cerr << "Enter the library first\n";
+            return;
+        }
+
+        connect_to_server();
+        std::vector<Cookie> cookies;
+        cookies.push_back(session_id);
+
+        std::string url = "/api/v1/tema/library/books/";
+        url.append(std::to_string(id));
+        std::string request =
+            create_delete_request(host, url, cookies, library_token);
+
+        send_to_server(request);
+        std::string response = receive_from_server();
+        disconnect_from_server();
+
+        Response r(response);
+        if (is_code_success(r.get_response_code())) {
+            std::cout << "Removed the book from the library!\n";
+        } else {
+            // TODO - show the recv data
+            std::cout << "Couldn't remove the book (" << r.get_response_code()
+                      << ")\n";
+        }
     }
 
     void logout() {
@@ -347,18 +429,24 @@ class Client {
         std::vector<Cookie> cookies;
         cookies.push_back(session_id);
 
-        std::string request = create_get_request(
-            host, "/api/v1/tema/auth/logout", "", cookies);
+        std::string request =
+            create_get_request(host, "/api/v1/tema/auth/logout", "", cookies);
 
         send_to_server(request);
         std::string response = receive_from_server();
-        std::cout << response << "\n";
         disconnect_from_server();
 
-        // TODO - Process response
+        Response r(response);
+        if (is_code_success(r.get_response_code())) {
+            std::cout << "You logged out!\n";
 
-        // Delete the cookie
-        session_id.set_value("");
+            // Delete the cookie
+            session_id.set_key("");
+            session_id.set_value("");
+        } else {
+            // TODO - show the recv data
+            std::cout << "Couldn't log out (" << r.get_response_code() << ")\n";
+        }
     }
 
    public:
@@ -386,9 +474,16 @@ class Client {
                 std::cout << "Username: ";
                 std::cin >> user;
 
-                std::string pass;
+                std::string pass, confirm;
                 if (HIDE_PASS) {
                     pass = std::string(getpass("Password: "));
+                    confirm = std::string(getpass("Confirm password: "));
+
+                    if (pass != confirm) {
+                        std::cerr << "Passwords are not the same!\n";
+                        std::cout << "\n";
+                        continue;
+                    }
                 } else {
                     std::cout << "Password: ";
                     std::cin >> pass;
@@ -435,6 +530,7 @@ class Client {
                 uint id = read_number("Book id: ");
                 delete_book(id);
             } else if (command == "logout") {
+                logout();
             } else if (command == "exit") {
                 return;
             } else {
