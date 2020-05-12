@@ -51,7 +51,7 @@ using json = nlohmann::json;
 
 // Settings
 #define BUFLEN 8192     // Response buffer size
-#define HIDE_PASS true  // Hide password input
+#define HIDE_PASS false // Hide password input
 
 /**
  * @brief Check if the condition is met. If it doesn't, print message and exit
