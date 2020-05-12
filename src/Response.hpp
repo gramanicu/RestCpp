@@ -93,6 +93,9 @@ class Response {
             }
         }
 
+        if(data == "Too many requests, please try again later.") {
+            data_j["error"] = "Too many requests, please try again later.";
+        } else 
         // If the content-length is set and we actually have data
         if (hasData && data.size() != 0) {
             if (isJson) {

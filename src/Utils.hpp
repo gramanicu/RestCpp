@@ -50,7 +50,6 @@ using json = nlohmann::json;
 #define FOREVER while (1)
 
 // Settings
-#define ENABLE_LOGS false
 #define BUFLEN 8192     // Response buffer size
 #define HIDE_PASS true  // Hide password input
 
@@ -67,42 +66,10 @@ using json = nlohmann::json;
  * @brief Check if the error happens. If it does, print it
  */
 #define CERR(condition)                                   \
-    if (condition && ENABLE_LOGS) {                       \
+    if (condition) {                       \
         std::cerr << __FILE__ << ", " << __LINE__ << ": " \
                   << std::strerror(errno) << "\n";        \
     }
-
-/**
- * @brief This function is similar to strncpy
- * Because strcpy is vulnerable to buffer overflows and strncpy doesn't
- * necessarily end strings with null terminator, this is solved using this
- * function. Works like strlcpy
- */
-void safe_cpy(char *dst, const char *src, size_t size) {
-    *((char *)mempcpy(dst, src, size)) = '\0';
-}
-
-/**
- * @brief Print messages to STDOUT
- * Will only print if ENABLE_LOGS is true
- * @param msg The message to be printed
- */
-void console_log(const std::string &msg) {
-    if (ENABLE_LOGS) {
-        std::cout << msg;
-    }
-}
-
-/**
- * @brief Sleep for the specified time in nanoseconds
- * @param nanoseconds
- */
-void nsleep(long nanoseconds) {
-    timespec slptm;
-    slptm.tv_sec = 0;
-    slptm.tv_nsec = nanoseconds;
-    nanosleep(&slptm, NULL);
-}
 
 /**
  * @brief DNS Lookup to find the associated to the hostname

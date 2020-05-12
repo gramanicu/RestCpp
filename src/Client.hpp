@@ -174,6 +174,16 @@ class Client {
     }
 
     /**
+     * @brief Print an error code returned in a response
+     * @param msg The error message
+     * @param code The status code
+     */
+    void show_error(const std::string& msg, const uint code) {
+        std::cerr << msg << " - Error code " << code << "\n";
+    }
+
+#pragma region Requests
+    /**
      * @brief Register a new account using a POST request
      * @param user The username
      * @param pass The password
@@ -196,9 +206,7 @@ class Client {
         if (is_code_success(r.get_response_code())) {
             std::cout << "Registration succeded!\n";
         } else {
-            // TODO - show the recv data
-            std::cout << "Registration failed (" << r.get_response_code()
-                      << ")\n";
+            show_error(r.get_json_data()["error"], r.get_response_code());
         }
     }
 
@@ -227,11 +235,13 @@ class Client {
         if (is_code_success(r.get_response_code())) {
             std::cout << "Login succeded!\n";
         } else {
-            // TODO - show the recv data
-            std::cout << "Login failed (" << r.get_response_code() << ")\n";
+            show_error(r.get_json_data()["error"], r.get_response_code());
         }
     }
 
+    /**
+     * @brief Try to access the library. If the operation is successfull, the JWT library_token will be set
+     */
     void enter_library() {
         // Check if this application has received a session id (user has logged
         // in succesfully)
@@ -256,12 +266,13 @@ class Client {
         if (is_code_success(r.get_response_code())) {
             std::cout << "Authorized!\n";
         } else {
-            // TODO - show the recv data
-            std::cout << "Couldn't enter the library (" << r.get_response_code()
-                      << ")\n";
+            show_error(r.get_json_data()["error"], r.get_response_code());
         }
     }
 
+    /**
+     * @brief Will return a list with all the books in the library (their id and title)
+     */
     void get_books() {
         // Check if this application has received a session id (user has logged
         // in succesfully)
@@ -288,15 +299,24 @@ class Client {
 
         Response r(response);
         if (is_code_success(r.get_response_code())) {
-            std::cout << "Received the books!\n";
-            std::cout << r.get_json_data().dump() << "\n";
+            if (r.get_json_data().size() != 0) {
+                std::cout << "Received the books!\n";
+                for (auto& elem : r.get_json_data()) {
+                    std::cout << "Book ID: " << elem["id"]
+                              << ", Title: " << elem["title"] << "\n";
+                }
+            } else {
+                std::cout << "There are no books in your library!\n";
+            }
         } else {
-            // TODO - show the recv data
-            std::cout << "The books weren't received (" << r.get_response_code()
-                      << ")\n";
+            show_error(r.get_json_data()["error"], r.get_response_code());
         }
     }
 
+    /**
+     * @brief Will return information about a book from the library, with a specific id     * 
+     * @param id The book id 
+     */
     void get_book(const uint id) {
         // Check if this application has received a session id (user has logged
         // in succesfully)
@@ -326,15 +346,26 @@ class Client {
         Response r(response);
         if (is_code_success(r.get_response_code())) {
             std::cout << "Received the book!\n";
-            std::cout << r.get_json_data().dump() << "\n";
+            for (auto& elem : r.get_json_data()) {
+                std::cout << "Title: " << elem["title"] << "\n";
+                std::cout << "Author: " << elem["author"] << "\n";
+                std::cout << "Publisher: " << elem["publisher"] << "\n";
+                std::cout << "Genre: " << elem["genre"] << "\n";
+                std::cout << "Page NO.: " << elem["page_count"] << "\n";
+            }
         } else {
-            // TODO - show the recv data
-            std::cout << "The book wasn't received (" << r.get_response_code()
-                      << ")\n";
-            std::cout << r.get_json_data().dump() << "\n";
+            show_error(r.get_json_data()["error"], r.get_response_code());
         }
     }
 
+    /**
+     * @brief Add a new book to the library.
+     * @param title The book title
+     * @param author The book author
+     * @param genre The book author
+     * @param publisher The book publisher
+     * @param page_count The number of pages in the book
+     */
     void add_book(const std::string& title, const std::string& author,
                   const std::string& genre, const std::string& publisher,
                   const uint page_count) {
@@ -362,9 +393,9 @@ class Client {
         body_data.push_back(KeyValue("page_count", std::to_string(page_count)));
         body_data.push_back(KeyValue("publisher", publisher));
 
-        std::string request =
-            create_post_request(host, "/api/v1/tema/library/books",
-                                "application/json", body_data, cookies, library_token);
+        std::string request = create_post_request(
+            host, "/api/v1/tema/library/books", "application/json", body_data,
+            cookies, library_token);
 
         send_to_server(request);
         std::string response = receive_from_server();
@@ -374,13 +405,14 @@ class Client {
         if (is_code_success(r.get_response_code())) {
             std::cout << "Added book to the library!\n";
         } else {
-            // TODO - show the recv data
-            std::cout << "Couldn't add the book (" << r.get_response_code()
-                      << ")\n";
-            std::cout << r.get_json_data().dump() << "\n";
+            show_error(r.get_json_data()["error"], r.get_response_code());
         }
     }
 
+    /**
+     * @brief Remove a specific book from the library
+     * @param id The id of the book
+     */
     void delete_book(const uint id) {
         // Check if this application has received a session id (user has logged
         // in succesfully)
@@ -411,12 +443,13 @@ class Client {
         if (is_code_success(r.get_response_code())) {
             std::cout << "Removed the book from the library!\n";
         } else {
-            // TODO - show the recv data
-            std::cout << "Couldn't remove the book (" << r.get_response_code()
-                      << ")\n";
+            show_error(r.get_json_data()["error"], r.get_response_code());
         }
     }
 
+    /**
+     * @brief Logout the user
+     */
     void logout() {
         // Check if this application has received a session id (user has logged
         // in succesfully)
@@ -444,10 +477,11 @@ class Client {
             session_id.set_key("");
             session_id.set_value("");
         } else {
-            // TODO - show the recv data
-            std::cout << "Couldn't log out (" << r.get_response_code() << ")\n";
+            show_error(r.get_json_data()["error"], r.get_response_code());
         }
     }
+
+#pragma endregion
 
    public:
     /**
@@ -532,6 +566,7 @@ class Client {
             } else if (command == "logout") {
                 logout();
             } else if (command == "exit") {
+                logout();
                 return;
             } else {
                 std::cout << "Invalid input!\n";
