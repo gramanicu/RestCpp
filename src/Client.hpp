@@ -548,15 +548,15 @@ class Client {
             } else if (command == "add_book") {
                 std::string title, author, genre, publisher;
                 uint page_count;
-
+                std::cin.ignore();
                 std::cout << "Title: ";
-                std::cin >> title;
+                std::getline(std::cin, title);
                 std::cout << "Author: ";
-                std::cin >> author;
+                std::getline(std::cin, author);
                 std::cout << "Genre: ";
-                std::cin >> genre;
+                std::getline(std::cin, genre);
                 std::cout << "Publisher: ";
-                std::cin >> publisher;
+                std::getline(std::cin, publisher);
                 page_count = read_number("Number of pages: ");
 
                 add_book(title, author, genre, publisher, page_count);
